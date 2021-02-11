@@ -33,19 +33,37 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
-        ("set", Some(_matches)) => {
-            eprintln!("unimplemented");
-            exit(1);
-        }
-        ("get", Some(_matches)) => {
-            eprintln!("unimplemented");
-            exit(1);
-        }
-        ("rm", Some(_matches)) => {
-            eprintln!("unimplemented");
-            exit(1);
-        }
+        ("set", Some(matches)) => {
+            let key = matches.value_of("KEY").expect("KEY argument missing");
+            let value = matches.value_of("VALUE").expect("VALUE argument missing");
 
-        _ => unreachable!()
+            let mut store = KvStore::open(current_dir()?)?;
+            store.set(key.to_string(), value.to_string())?;
+        }
+        ("get", Some(matches)) => {
+            let key = matches.value_of("KEY").expect("KEY argument missing");
+
+            let mut store = KvStore::open(current_dir()?)?;
+            if let Some(value) = store.get(key.to_string())? {
+                println!("{}", value);
+            } else {
+                println!("Key not found");
+            }
+        }
+        ("rm", Some(matches)) => {
+            let key = matches.value_of("KEY").expect("KEY argument missing");
+
+            let mut store = KvStore::open(current_dir()?)?;
+            match store.remove(key.to_string()) {
+                Ok(()) => {}
+                Err(KvsError::KeyNotFound) => {
+                    println!("Key not found");
+                    exit(1);
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        _ => unreachable!(),
     }
+    Ok(())
 }
